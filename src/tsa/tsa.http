@@ -1,0 +1,6 @@
+@tsa_HostAddress = http://localhost:5107
+
+GET {{tsa_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
