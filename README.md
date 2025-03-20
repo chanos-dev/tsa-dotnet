@@ -1,5 +1,5 @@
 ## RFC 3161 TSA Sample .NET Web API
-The timestamp request responds with a TSQ based on a test certificate.  
+The timestamp request responds with a TSR based on a test certificate.  
 Since the certificate is not trusted, it should only be used for testing purposes.  
 When requesting tsa, it responds with a self-signed certificate.  
 When requesting tsa-rootca, it responds with a chain of trust certificate.  
