@@ -1,4 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Org.BouncyCastle.Crypto;
+using Org.BouncyCastle.X509;
 using tsa.Service;
 
 namespace tsa.Endpoint
@@ -7,31 +9,52 @@ namespace tsa.Endpoint
     {
         internal static WebApplication MapTSA(this WebApplication app)
         {
-            app.MapPost("/tsa", async ([FromServices] ITimestampService tsa,
-                [FromServices] ICertificateService certificate,
-                [FromServices] ILogger<Program> logger,
-                HttpContext context, 
-                CancellationToken token) =>
+            async Task<IResult> ResponseTSAAsync(ITimestampService tsa,
+                Func<(X509Certificate, AsymmetricKeyParameter)> GenerateTSAFunc,
+                HttpContext context,
+                CancellationToken token)
             {
                 try
                 {
-                    using var ms = new MemoryStream();
+                    using MemoryStream ms = new();
                     await context.Request.Body.CopyToAsync(ms, token);
-                    byte[] requestBytes = ms.ToArray();
+                    byte[] tsq = ms.ToArray();
 
-                    if (requestBytes is null || requestBytes.Length == 0)
-                        return Results.BadRequest("TSA");
+                    if (tsq is null || tsq.Length == 0)
+                        return Results.BadRequest("The timestamp request (TSQ) is empty. Please provide a valid request.");
 
-                    var cert = certificate.GenerateTSACertificateWithRootCA();
+                    (var cert, var key) = GenerateTSAFunc.Invoke();
 
-                    var responseBytes = tsa.GenerateTSAResponse(cert, requestBytes);
+                    byte[] tsrBytes = tsa.GenerateTSR(cert, key, tsq);
 
-                    return Results.File(responseBytes, "application/timestamp-reply");
+                    return Results.File(tsrBytes, "application/timestamp-reply");
                 }
-                catch (Exception e)
+                catch (Exception ex)
                 {
-                    return Results.BadRequest(e.Message);
+                    return Results.BadRequest(ex.Message);
                 }
+            }
+
+            app.MapPost("/tsa", async ([FromServices] ITimestampService tsa,
+                [FromServices] ICertificateService certificate,
+                HttpContext context,
+                CancellationToken token) =>
+            {
+                return await ResponseTSAAsync(tsa,
+                    certificate.GenerateTSACertificate,
+                    context,
+                    token);
+            });
+
+            app.MapPost("/tsa-rootca", async ([FromServices] ITimestampService tsa,
+                [FromServices] ICertificateService certificate,
+                HttpContext context,
+                CancellationToken token) =>
+            {
+                return await ResponseTSAAsync(tsa,
+                    certificate.GenerateTSACertificateWithRootCA,
+                    context,
+                    token);
             });
 
             return app;
