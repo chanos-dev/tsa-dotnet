@@ -7,9 +7,8 @@ When requesting tsa-rootca, it responds with a chain of trust certificate.
 ## Environment
 .NET 8, Visual Studio 2022
 
-## Self-Signed Certificate Setup
-To use a self-signed certificate, you need the crt file and privateKey file in the assets folder.  
-These files are provided by default, but if you want, you can generate the crt and privateKey files using OpenSSL, then copy them into the assets folder and configure the CertificateConfig in appsettings.json.
+## rootCA Configuration
+To use a self-signed rootCA certificate, you need the crt file and privateKey file in the assets folder. These files are provided by default, but if you prefer, you can generate the crt and privateKey files using OpenSSL, then copy them into the assets folder and update the CertificateConfig section in appsettings.json accordingly.
 
 ## OpenSSL
 ```
